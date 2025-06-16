@@ -19,6 +19,10 @@ vim.opt.number = true
 --  Experiment for yourself to see if you like it!
 vim.opt.relativenumber = true
 
+vim.opt.tabstop = 2 -- Number of visual spaces per TAB
+vim.opt.shiftwidth = 2 -- Number of spaces for autoindent
+vim.opt.expandtab = true -- Convert tabs to spaces
+
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.opt.mouse = "a"
 
@@ -180,6 +184,23 @@ require("lazy").setup({
 			},
 		},
 	},
+  {
+  "epwalsh/obsidian.nvim",
+  version = "*",
+  lazy = true,
+  ft = "markdown",
+  dependencies = {
+    "nvim-lua/plenary.nvim",
+  },
+  opts = {
+    workspaces = {
+      {
+        name = "vault",
+        path = "/home/han/Project Raihan/Notes Raihan/Hansmology", -- <- your vault path
+      },
+    },
+  },
+  },
 	{
 		"lervag/vimtex",
 		lazy = false, -- we don't want to lazy load VimTeX
