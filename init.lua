@@ -184,23 +184,23 @@ require("lazy").setup({
 			},
 		},
 	},
-  {
-  "epwalsh/obsidian.nvim",
-  version = "*",
-  lazy = true,
-  ft = "markdown",
-  dependencies = {
-    "nvim-lua/plenary.nvim",
-  },
-  opts = {
-    workspaces = {
-      {
-        name = "vault",
-        path = "/home/han/Project Raihan/Notes Raihan/Hansmology", -- <- your vault path
-      },
-    },
-  },
-  },
+	{
+		"epwalsh/obsidian.nvim",
+		version = "*",
+		lazy = true,
+		ft = "markdown",
+		dependencies = {
+			"nvim-lua/plenary.nvim",
+		},
+		opts = {
+			workspaces = {
+				{
+					name = "vault",
+					path = "", -- <- your vault path
+				},
+			},
+		},
+	},
 	{
 		"lervag/vimtex",
 		lazy = false, -- we don't want to lazy load VimTeX
@@ -208,6 +208,34 @@ require("lazy").setup({
 		init = function()
 			-- VimTeX configuration goes here, e.g.
 			vim.g.vimtex_view_method = "zathura"
+		end,
+	},
+	{
+		"ThePrimeagen/harpoon",
+		dependencies = { "nvim-lua/plenary.nvim" },
+		config = function()
+			require("harpoon").setup()
+
+			-- harpoon setup
+
+			local harpoon_mark = require("harpoon.mark")
+			local harpoon_ui = require("harpoon.ui")
+
+			vim.keymap.set("n", "<leader>a", harpoon_mark.add_file)
+			vim.keymap.set("n", "<C-e>", harpoon_ui.toggle_quick_menu)
+
+			vim.keymap.set("n", "<leader>1", function()
+				harpoon_ui.nav_file(1)
+			end)
+			vim.keymap.set("n", "<leader>2", function()
+				harpoon_ui.nav_file(2)
+			end)
+			vim.keymap.set("n", "<leader>3", function()
+				harpoon_ui.nav_file(3)
+			end)
+			vim.keymap.set("n", "<leader>4", function()
+				harpoon_ui.nav_file(4)
+			end)
 		end,
 	},
 	{
@@ -440,6 +468,43 @@ require("lazy").setup({
 			library = {
 				-- Load luvit types when the `vim.uv` word is found
 				{ path = "${3rd}/luv/library", words = { "vim%.uv" } },
+			},
+		},
+	},
+	{
+		"folke/trouble.nvim",
+		opts = {}, -- for default options, refer to the configuration section for custom setup.
+		cmd = "Trouble",
+		keys = {
+			{
+				"<leader>xx",
+				"<cmd>Trouble diagnostics toggle<cr>",
+				desc = "Diagnostics (Trouble)",
+			},
+			{
+				"<leader>xX",
+				"<cmd>Trouble diagnostics toggle filter.buf=0<cr>",
+				desc = "Buffer Diagnostics (Trouble)",
+			},
+			{
+				"<leader>cs",
+				"<cmd>Trouble symbols toggle focus=false<cr>",
+				desc = "Symbols (Trouble)",
+			},
+			{
+				"<leader>cl",
+				"<cmd>Trouble lsp toggle focus=false win.position=right<cr>",
+				desc = "LSP Definitions / references / ... (Trouble)",
+			},
+			{
+				"<leader>xL",
+				"<cmd>Trouble loclist toggle<cr>",
+				desc = "Location List (Trouble)",
+			},
+			{
+				"<leader>xQ",
+				"<cmd>Trouble qflist toggle<cr>",
+				desc = "Quickfix List (Trouble)",
 			},
 		},
 	},
@@ -842,13 +907,13 @@ require("lazy").setup({
 		--
 		-- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
 		--
-		"EdenEast/nightfox.nvim",
+		"ellisonleao/gruvbox.nvim",
 		priority = 1000, -- Make sure to load this before all the other start plugins.
 		init = function()
 			-- Load the colorscheme here.
 			-- Like many other themes, this one has different styles, and you could load
 			-- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-			vim.cmd.colorscheme("carbonfox")
+			vim.cmd.colorscheme("gruvbox")
 
 			-- You can configure highlights by doing something like:
 			vim.cmd.hi("Comment gui=none")
