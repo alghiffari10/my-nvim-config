@@ -1,9 +1,27 @@
--- Set <space> as the leader key
 -- See `:help mapleader`
 --  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
 vim.keymap.set("n", "<leader>e", ":Ex<CR>", { noremap = true, silent = true })
+
+vim.opt.scrolloff = 999
+
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = { "quarto", "markdown" },
+	callback = function()
+		vim.keymap.set("n", "<leader>cp", function()
+			local row = vim.api.nvim_win_get_cursor(0)[1]
+			-- insert the three lines
+			vim.api.nvim_buf_set_lines(0, row, row, false, { "```{python}", "", "```" })
+			-- move cursor to the empty line (row + 1), column 0
+			vim.api.nvim_win_set_cursor(0, { row + 1, 0 })
+			-- enter insert mode at the beginning of that line
+			vim.cmd("startinsert!")
+		end, { buffer = true, desc = "Insert Quarto python block" })
+	end,
+})
+
+vim.g.Tex_BibtexFlavor = "biber"
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = false
@@ -85,6 +103,24 @@ vim.keymap.set("i", "ff", "<Esc>")
 
 -- Diagnostic keymaps
 vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, { desc = "Open diagnostic [Q]uickfix list" })
+vim.diagnostic.config({
+	underline = false,
+	virtual_text = {
+		spacing = 2,
+		prefix = "●",
+	},
+	update_in_insert = false,
+	severity_sort = true,
+	signs = {
+		text = {
+			-- Alas nerdfont icons don't render properly on Medium!
+			[vim.diagnostic.severity.ERROR] = " ",
+			[vim.diagnostic.severity.WARN] = " ",
+			[vim.diagnostic.severity.HINT] = " ",
+			[vim.diagnostic.severity.INFO] = " ",
+		},
+	},
+})
 
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
@@ -196,18 +232,29 @@ require("lazy").setup({
 			workspaces = {
 				{
 					name = "vault",
-					path = "", -- <- your vault path
+					path = "/home/han/Project Raihan/Notes Raihan/Hansmology", -- <- your vault path
 				},
 			},
 		},
 	},
 	{
 		"lervag/vimtex",
-		lazy = false, -- we don't want to lazy load VimTeX
-		-- tag = "v2.15", -- uncomment to pin to a specific release
+		lazy = false,
 		init = function()
-			-- VimTeX configuration goes here, e.g.
-			vim.g.vimtex_view_method = "zathura"
+			-- PDF viewer
+			vim.g.vimtex_view_method = "general"
+			vim.g.vimtex_view_general_viewer = "evince"
+			vim.g.vimtex_view_general_options = ""
+
+			-- Use latexmk normally (WITHOUT -usebiber)
+			vim.g.vimtex_compiler_method = "latexmk"
+			vim.g.vimtex_compiler_latexmk = {
+				options = {
+					"-pdf",
+					"-interaction=nonstopmode",
+					"-shell-escape",
+				},
+			}
 		end,
 	},
 	{
@@ -221,8 +268,8 @@ require("lazy").setup({
 			local harpoon_mark = require("harpoon.mark")
 			local harpoon_ui = require("harpoon.ui")
 
-			vim.keymap.set("n", "<leader>a", harpoon_mark.add_file)
-			vim.keymap.set("n", "<C-e>", harpoon_ui.toggle_quick_menu)
+			vim.keymap.set("n", "<leader>a", harpoon_mark.add_file, { desc = "Add new file to harpoon buffer" })
+			vim.keymap.set("n", "<C-e>", harpoon_ui.toggle_quick_menu, { desc = "Open harpoon window" })
 
 			vim.keymap.set("n", "<leader>1", function()
 				harpoon_ui.nav_file(1)
@@ -236,6 +283,9 @@ require("lazy").setup({
 			vim.keymap.set("n", "<leader>4", function()
 				harpoon_ui.nav_file(4)
 			end)
+			vim.keymap.set("n", "<leader>5", function()
+				harpoon_ui.nav_file(5)
+			end)
 		end,
 	},
 	{
@@ -243,21 +293,23 @@ require("lazy").setup({
 		dependencies = {
 			"neovim/nvim-lspconfig",
 			"mfussenegger/nvim-jdtls",
-			-- Optional dependency if you use nvim-tree:
 			"nvim-tree/nvim-tree.lua",
 		},
+
+		-- ⬇⬇⬇ ADD THIS TO PREVENT LOADING IN NON-SPRING PROJECTS
+		cond = function()
+			return vim.fn.filereadable("pom.xml") == 1 or vim.fn.glob("build.gradle*") ~= ""
+		end,
+		-- ⬆⬆⬆
+
 		config = function()
 			local springboot_nvim = require("springboot-nvim")
-			-- Uncomment the desired configuration:
 
-			-- Basic setup:
-			-- springboot_nvim.setup({})
-
-			-- Recommended setup with key mappings:
 			vim.keymap.set("n", "<leader>Jr", springboot_nvim.boot_run, { desc = "Spring Boot Run Project" })
 			vim.keymap.set("n", "<leader>Jc", springboot_nvim.generate_class, { desc = "Java Create Class" })
 			vim.keymap.set("n", "<leader>Ji", springboot_nvim.generate_interface, { desc = "Java Create Interface" })
 			vim.keymap.set("n", "<leader>Je", springboot_nvim.generate_enum, { desc = "Java Create Enum" })
+
 			springboot_nvim.setup({})
 		end,
 	},
@@ -681,7 +733,7 @@ require("lazy").setup({
 			local servers = {
 				-- clangd = {},
 				-- gopls = {},
-				-- pyright = {},
+				pyright = {},
 				-- rust_analyzer = {},
 				-- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
 				--
@@ -702,7 +754,7 @@ require("lazy").setup({
 								callSnippet = "Replace",
 							},
 							-- You can toggle below to ignore Lua_LS's noisy `missing-fields` warnings
-							-- diagnostics = { disable = { 'missing-fields' } },
+							diagnostics = { disable = { "missing-fields" } },
 						},
 					},
 				},
@@ -785,10 +837,62 @@ require("lazy").setup({
 		},
 	},
 
+	{
+		"quarto-dev/quarto-nvim",
+		dependencies = {
+			"jmbuhr/otter.nvim", -- integrates LSP with code blocks
+			"neovim/nvim-lspconfig", -- LSP support
+			"nvim-treesitter/nvim-treesitter", -- Treesitter
+			"hrsh7th/nvim-cmp", -- optional: autocompletion
+		},
+		config = function()
+			require("quarto").setup({
+				lspFeatures = {
+					enabled = true,
+					languages = { "r", "python", "julia", "bash" },
+					chunks = "all",
+					diagnostics = {
+						enabled = true,
+						triggers = { "BufWritePost" },
+					},
+				},
+				codeRunner = {
+					enabled = true,
+					default_method = "toggleterm", -- or 'slime', 'jobs'
+				},
+				keymap = {
+					enabled = true,
+					format = "<leader>qf",
+					preview = "<leader>qp",
+				},
+			})
+		end,
+	},
+
+	{
+		"L3MON4D3/LuaSnip",
+		dependencies = { "rafamadriz/friendly-snippets" },
+		build = (function()
+			if vim.fn.has("win32") == 1 or vim.fn.executable("make") == 0 then
+				return
+			end
+			return "make install_jsregexp"
+		end)(),
+		config = function()
+			local luasnip = require("luasnip")
+
+			-- 🔹 Load VSCode-style snippets (this includes rafce, rfc, etc.)
+			require("luasnip.loaders.from_vscode").lazy_load()
+
+			-- 🔹 Make TypeScript React share React snippets
+			luasnip.filetype_extend("typescriptreact", { "javascriptreact" })
+		end,
+	},
 	{ -- Autocompletion
 		"hrsh7th/nvim-cmp",
 		event = "InsertEnter",
 		dependencies = {
+
 			-- Snippet Engine & its associated nvim-cmp source
 			{
 				"L3MON4D3/LuaSnip",
@@ -893,6 +997,7 @@ require("lazy").setup({
 						-- set group index to 0 to skip loading LuaLS completions as lazydev recommends it
 						group_index = 0,
 					},
+					{ name = "otter" },
 					{ name = "nvim_lsp" },
 					{ name = "luasnip" },
 					{ name = "path" },
@@ -901,22 +1006,34 @@ require("lazy").setup({
 		end,
 	},
 
-	{ -- You can easily change to a different colorscheme.
-		-- Change the name of the colorscheme plugin below, and then
-		-- change the command in the config to whatever the name of that colorscheme is.
-		--
-		-- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-		--
+	{ -- Colorscheme
 		"ellisonleao/gruvbox.nvim",
-		priority = 1000, -- Make sure to load this before all the other start plugins.
+		priority = 1000,
+		lazy = false,
+		-- The init function runs BEFORE the plugin loads,
+		-- so we set global variables here:
 		init = function()
-			-- Load the colorscheme here.
-			-- Like many other themes, this one has different styles, and you could load
-			-- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
+			-- **Crucial:** Set Neovim to use the terminal's True Colors
+			vim.opt.termguicolors = true
+
+			-- Optional Gruvbox settings (set these before loading the theme)
+			-- Use the 'hard' background style (for maximum contrast)
+			vim.g.gruvbox_contrast_dark = "hard"
+
+			-- Ensure Neovim knows we want dark mode (for the Gruvbox Dark theme)
+			vim.opt.background = "dark"
+
+			-- Optional: disable italics for keywords, functions, etc.
+			vim.g.gruvbox_italic = 0
+		end,
+
+		-- The config function runs AFTER the plugin is successfully loaded:
+		config = function()
+			-- Load the colorscheme
 			vim.cmd.colorscheme("gruvbox")
 
-			-- You can configure highlights by doing something like:
-			vim.cmd.hi("Comment gui=none")
+			-- Optional: tweak comments (example for making them slightly dimmer)
+			-- vim.cmd.hi("Comment gui=none ctermfg=246")
 		end,
 	},
 
@@ -976,6 +1093,7 @@ require("lazy").setup({
 				"c",
 				"diff",
 				"html",
+				"javascript",
 				"lua",
 				"luadoc",
 				"markdown",
@@ -988,6 +1106,15 @@ require("lazy").setup({
 			auto_install = true,
 			highlight = {
 				enable = true,
+
+				-- 🧠 Add this function to disable highlight *inside* markdown/qmd
+				disable = function(lang, bufnr)
+					-- local ft = vim.api.nvim_buf_get_option(bufnr, "filetype")
+					-- if ft == "quarto" or ft == "qmd" or ft == "javascript" or ft == "js" then
+					--	return true -- disable for markdown-like files
+					-- end
+					-- return false
+				end,
 				-- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
 				--  If you are experiencing weird indenting issues, add the language to
 				--  the list of additional_vim_regex_highlighting and disabled languages for indent.
